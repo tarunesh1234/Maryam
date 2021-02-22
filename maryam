@@ -39,25 +39,32 @@ sys.dont_write_bytecode = True
 def cui(args, format_help):
 	x = base.Base
 	if args:
+		# if args is given proceed acording to them else start framework cmdloop
 		option = args[0]
 		if option in ["-v", "--version"]:
 			print(f"OWASP MARYAM V.{__VERSION__}")
 			exit(0)
-		command = " ".join(args[1:])
+		command = " ".join(args[1:])  #join all cmd after {-e -v -h} option
+		
+		#v => last arg
+		#not v can be removed
 		if not v or option not in ["-e", "--execute", "-s", "--start"]:
 			print(format_help)
 			exit(0)
+		
 		x = x()
 		if option in ["-e", "--execute"]:
 			x.onecmd(command)
 			exit(0)
 		elif args[0] in ["-s", "--start"]:
 			x.onecmd(command)
+			
 	else:
 		x = x()
 	try:
 		x.cmdloop()
 	except KeyboardInterrupt:
+		#print('exiting')
 		print('')
 	except Exception as e:
 		raise e
@@ -65,13 +72,21 @@ def cui(args, format_help):
 
 desc = "maryam -h"
 parse = argparse.ArgumentParser(description=desc)
+
+#metavar => -e means execute , -s means start
+#dest execute => -e [anything typed here get stored in dest var]
+#action => --foo 1  (default)action=store  => store 1 in foo => foo=1
+#action = store_true => foo=true
+#action  = version => expect verion parameter to show version
+
 parse.add_argument("-e", help="execute a command and exit", metavar="execute", dest="execute", action="store")
 parse.add_argument("-s", help="run a command without exit", metavar="start", dest="start", action="store")
 parse.add_argument("-v", help="show version and exit", action="version", version=f"OWASP MARYAM V.{__VERSION__}")
 format_help = parse.format_help()
+#format_help Return a string containing a help message, including the program usage and information about the arguments registered with the ArgumentParser.
 argv = sys.argv[1:]
 for k,v in enumerate(argv):
-	if " " in v:
+	if " " in v:  # if use option with no value then assign ""
 		argv[k] = f'"{v}"'
 
 cui(argv, format_help)
