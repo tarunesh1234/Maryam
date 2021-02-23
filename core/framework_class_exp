@@ -1,0 +1,196 @@
+CLASS:
+	Framework(cmd.Cmd):
+
+MEMBER_VARIABLES:
+	prompt = ">>>"		# defined in cmd
+	# mode flags
+	_script = 0
+	_load = 0
+	# framework variables
+	_global_options = Options() # modified dict object
+	_loaded_modules = {}
+	_module_names = {}
+	app_path = ''
+	data_path = ''
+	core_path = ''
+	module_path = ''
+	module_dirname = ''
+	workspace = ''
+	module_ext = ''
+	variables = {}
+	_home = ''
+	_record = None
+	_spool = None		# for spooling in base.py
+	_summary_counts = {}
+	Colors = Colors
+	_history_file = ''
+
+CONSTRUCTER:
+	def __init__(self, params):
+		cmd.Cmd.__init__(self)
+		self._modulename = params
+		self.ruler = '-'
+		self.spacer = '  '
+		self.nohelp = f'{Colors.R}[!] No help on %s{Colors.N}'
+		self.do_help.__func__.__doc__ = '''Displays this menu'''
+		self.doc_header = 'Commands (type [help|?] <topic>):'
+		self._exit = 0
+		
+MEMBER_FUNCTIONS:
+	# ==================================================
+	# CMD OVERRIDE METHODS
+	# ==================================================
+		default
+		emptyline
+		precmd
+		onecmd
+		print_topics
+
+	# ==================================================
+	# SUPPORT METHODS
+	# ==================================================
+		to_unicode_str
+		to_unicode
+		_is_readable
+		_parse_rowids
+
+	# ==================================================
+	# OUTPUT METHODS
+	# ==================================================
+		print_exception
+		error
+		output
+		alert
+		verbose
+		debug
+		heading
+		table
+	
+	# ==================================================
+	# EXPORT METHODS
+	# ==================================================
+		save_gather
+		json2xml
+		json2csv
+		csv2text
+		exporter
+
+	# ==================================================
+	# ADD METHODS
+	# ==================================================
+		_display	
+	
+	# ==================================================
+	# HISTORY METHODS
+	# ==================================================
+		_init_history
+		_get_history
+		_log_commands
+	
+	# ==================================================
+	# OPTIONS METHODS
+	# ==================================================
+		register_option
+		_validate_options
+		_load_config
+		_save_config
+	
+	# ==================================================
+	# REQUEST METHODS
+	# ==================================================
+		_print_prepared_request
+		_print_response
+		request
+	
+	# ==================================================
+	# SHOW METHODS
+	# ==================================================	
+		show_history
+		show_modules
+		show_options
+		show_var
+		_get_show_names
+	
+	# ==================================================
+	# COMMAND METHODS
+	# ==================================================
+		do_history
+		do_exit
+		do_back
+		do_set
+		do_unset
+		do_show
+		do_search
+		do_shell
+		do_resource
+		do_var
+		do_record
+		do_spool
+		do_report
+		do_load = do_use
+	
+	#==================================================
+	# VARIABLE METHODS
+	#==================================================
+		get_var
+		add_var
+		delete_var
+		_list_var
+		_init_var
+	
+	# ==================================================
+	# HELP METHODS
+	# ==================================================
+		help_history
+		help_load = help_use
+		help_resource
+		help_var
+		help_record
+		help_spool
+		help_report
+		help_search
+		help_set
+		help_unset
+		help_shell
+		help_show
+	
+	# ==================================================
+	# COMPLETE METHODS
+	# ==================================================
+		complete_load = complete_use
+		complete_set = complete_unset
+		complete_record = complete_spool
+		complete_show
+		complete_options
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

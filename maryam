@@ -55,14 +55,17 @@ def cui(args, format_help):
 		x = x()
 		if option in ["-e", "--execute"]:
 			x.onecmd(command)
+			# execute cmd and exit
 			exit(0)
 		elif args[0] in ["-s", "--start"]:
 			x.onecmd(command)
+			# execute cmd and stay in loop
 			
 	else:
 		x = x()
 	try:
 		x.cmdloop()
+		# start loop
 	except KeyboardInterrupt:
 		#print('exiting')
 		print('')

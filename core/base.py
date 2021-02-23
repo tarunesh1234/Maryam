@@ -16,6 +16,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # Based on the Recon-ng core(https://github.com/lanmaster53/recon-ng)
 
+# This file contains 2 classes AND spool_print() function
+# 1. Base
+# 2. Mode => console0 ,cli1 , gui2 
+
+
+
 __version__ = "v1.4.9"
 import argparse
 import errno
@@ -61,7 +67,7 @@ builtins._print = print
 builtins.print = spool_print
 
 
-
+# instance of this get executed during starting operation
 class Base(framework.Framework):
 
 	def __init__(self):
@@ -491,6 +497,8 @@ class Base(framework.Framework):
 
 	def run_tool(self, func, tool_name, args, output=None):
 		try:
+			
+			# process(target=func_ref , args=()) => run func_ref(args) in seprate process
 			proc = Process(target=getattr(self, func), args=(tool_name, args, output))
 			proc.start()
 			proc.join()

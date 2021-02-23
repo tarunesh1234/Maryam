@@ -16,20 +16,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # Based on the Recon-ng core(https://github.com/lanmaster53/recon-ng)
 
-import cmd
-import codecs
+
+# This file contains 4 classes
+# 1. FrameworkException
+# 2. Colors
+# 3. Options =>set del options
+# 4. Framework => core framwork (all cmdline cmds are defined here)
+
+
+
+import cmd   #for line-oriented command interpreters
+# The cmd module contains one public class, Cmd, designed to be used as a base class for command processors
+# such as interactive shells and other command interpreters. 
+# By default it uses readline for interactive prompt handling, command line editing, and command completion.
+# The interpreter uses a loop to read all lines from its input, parse them,
+# and then dispatch the command to an appropriate command handler
+# Input lines are parsed into two parts. The command, and any other text on the line.
+# for command foo bar, and your class includes a method named do_foo(), it is called with "bar" as argument.
+# The end-of-file marker is dispatched to do_EOF()
+# If a command handler returns a true value, the program will exit cleanly. 
+# So to give a clean way to exit your interpreter, make sure to implement do_EOF() and have it return True.
+# If cmd handler not found then  default() is called with the entire input line as an argument.
+# for more info https://pymotw.com/2/cmd/
+
+
+import codecs #Encoders and decoders for converting text between different representations.
 import json
 import os
 import re
 import subprocess
 import sys
-import signal
-import traceback
+import signal  #Receive notification of asynchronous system events
+import traceback #Extract, format, and print exceptions and stack traces
 import requests
 import shlex
 from core.util import rand_uagent
-from io import StringIO
+from io import StringIO		#StringIO provides a convenient means of working with text in memory using the file API (read(), write(), etc.).
 
+
+#custom exception class has to inherit Exception class
 class FrameworkException(Exception):
 	def __init__(self, message):
 		Exception.__init__(self, message)
@@ -45,16 +70,26 @@ class Colors(object):
 
 
 class Options(dict):
-
+	
 	def __init__(self, *args, **kwargs):
 		self.required = {}
 		self.description = {}
-
+		
+		
+		# The super() builtin returns a proxy object that allows us to access methods of the base class
+		# super is a shortcut to access a base class without having to know its type or name.
+		# if not using super => parentclass.methodName(self , *args, **kwargs)
+		# in py>3 => super().methoName(*args, **kwargs)
+		# in py<2 => super(subClass, self).method(*args, **kwargs) [also base must inherit object]
+		# you can use py2 super verion to call super with different base class
+		# super() will search in mro order of the class [className.__mro__]
 		super(Options, self).__init__(*args, **kwargs)
-
+	
+	# dundder method to set item {here key value pair in dict parentClass} 
 	def __setitem__(self, name, value):
 		super(Options, self).__setitem__(name, self._autoconvert(value))
-
+	
+	# dundder method to delete item {here key value pair in dict parentClass} 
 	def __delitem__(self, name):
 		super(Options, self).__delitem__(name)
 		if name in self.required:
@@ -62,9 +97,14 @@ class Options(dict):
 		if name in self.description:
 			del self.description[name]
 
+	# single _ before method in python class is a convention to difine private method in python class
 	def _boolify(self, value):
 		# designed to throw an exception if value is not a string
 		# representation of a boolean
+		
+		#temp = {'true': True, 'false': False, 'yes': True, 'no': False}
+		#return temp[value.lower()]
+		#below state is same as above two lines
 		return {'true': True, 'false': False, 'yes': True, 'no': False}[value.lower()]
 
 	def _autoconvert(self, value):
@@ -79,6 +119,8 @@ class Options(dict):
 				break
 			except (ValueError, KeyError, AttributeError):
 				pass
+		
+		# check if value is float
 		if isinstance(value, int) and '.' in str(orig):
 			return float(orig)
 		return value
@@ -94,18 +136,18 @@ class Options(dict):
 			data[key] = self[key]
 		return data
 
+
+
 # =================================================
 # FRAMEWORK CLASS
 # =================================================
-
-
 class Framework(cmd.Cmd):
-	prompt = ">>>"
+	prompt = ">>>"		# defined in cmd
 	# mode flags
 	_script = 0
 	_load = 0
 	# framework variables
-	_global_options = Options()
+	_global_options = Options() # modified dict object
 	_loaded_modules = {}
 	_module_names = {}
 	app_path = ''
@@ -118,7 +160,7 @@ class Framework(cmd.Cmd):
 	variables = {}
 	_home = ''
 	_record = None
-	_spool = None
+	_spool = None		# for spooling in base.py
 	_summary_counts = {}
 	Colors = Colors
 	_history_file = ''
@@ -135,19 +177,23 @@ class Framework(cmd.Cmd):
 	# ==================================================
 	# CMD OVERRIDE METHODS
 	# ==================================================
-
+	
+	
+	# if no cmd handler is found => default is executed => run cmd as in shell
 	def default(self, line):
 		self.do_shell(line)
 
+	#If the line is empty, emptyline() is called. The default implementation runs the previous command again.
 	def emptyline(self):
 		# disables running of last command when no command is given
 		# return flag to tell interpreter to continue
 		return 0
-
+	
+	#If the line contains a command, first precmd() is called then the processor is looked up and invoked.
 	def precmd(self, line):
 		line = self.to_unicode(line)
 		if Framework._load:
-			print('\r', end='')
+			print('\r', end='')		# carriage return \r moves the cursor at the begining
 		if Framework._script:
 			print(f'{line}')
 		if Framework._record:
@@ -159,24 +205,33 @@ class Framework(cmd.Cmd):
 			Framework._spool.write(f'{self.prompt}{line}{os.linesep}')
 			Framework._spool.flush()
 		return line
-
+	
+	
+	#Each iteration through cmdloop() calls onecmd() to dispatch the command to its processor.
 	def onecmd(self, line):
 		line = self.to_unicode(line)
-		# Log commant into the history file if 'history' is true
+		# Log command into the history file if 'history' is true
 		if self._global_options['history']:
 			self._log_commands(line)
-		cmd, arg, line = self.parseline(line)
+		
+		# parseline(line) create a tuple containing the command, and the remaining portion of the line.
+		# parseline(greet Bob) => ('greet', 'Bob', 'greet Bob')
+		cmd, arg, line = self.parseline(line) 
 		if not line:
 			return self.emptyline()
+		
 		if line == 'EOF':
 			# reset stdin for raw_input
 			sys.stdin = sys.__stdin__
 			Framework._script = 0
 			Framework._load = 0
 			return 0
+		
 		if cmd is None:
 			return self.default(line)
+		
 		self.lastcmd = line
+		
 		if cmd == '':
 			return self.default(line)
 		else:
@@ -184,11 +239,11 @@ class Framework(cmd.Cmd):
 				return self.run_tool('opt_proc', cmd, arg)
 			else:
 				try:
-					func = getattr(self, 'do_' + cmd)
+					func = getattr(self, 'do_' + cmd)  #find cmd handler
 				except AttributeError:
 					return self.default(line)
 				try:
-					return func(arg)
+					return func(arg)   #dispatching cmd to correct cmd handler
 				except Exception as e:
 					self.print_exception()
 
@@ -248,6 +303,7 @@ class Framework(cmd.Cmd):
 	# ==================================================
 
 	def print_exception(self, line=''):
+		# traceback module works with the call stack to produce error messages
 		stack_list = [x.strip() for x in traceback.format_exc().strip().splitlines()]
 		message = stack_list[-1]
 		if self._global_options['verbosity'] == 0:
@@ -304,29 +360,61 @@ class Framework(cmd.Cmd):
 		if level == 1:
 			print(f"{self.spacer}{line.title()}")
 			print(f"{self.spacer}{self.ruler*len(line)}")
-
+			
+	
+	
+	
+	#	data = dict.items() => dict_items([(key,value),(k2,v2),.......])
+	#   header=['Name', 'Value']
+	#  	+-----------------------------------------------------------------------------------+
+  	#	|                                  TITLE                                 			|
+	#	+-----------------------------------------------------------------------------------+
+  	#	|    Name    |                                Value                                 |
+  	#	+-----------------------------------------------------------------------------------+
+  	#	| agent      | Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0 |
+  	#	| history    | True                                                                 |
+  	#	| limit      | 10                                                                   |
+  	#	+-----------------------------------------------------------------------------------+
 	def table(self, data, header, title='', linear=False, sep='-'):
 		'''Accepts a list of rows and outputs a table.'''
-		tdata = list(data)
+		title="DEMO TITLE EXCEEDING THE MAXIMUM TDATA ROW LENGTH WHICH RAISE TypeError: can't multiply sequence by non-int of type 'float'."
+		#print(len(title))
+		tdata = list(data)		# [(key,value),(k2,v2),.......]
+		
 		if header:
 			tdata.insert(0, header)
+			
+		# checking for equal no of cols in table data => tuple size must be same
 		if len(set([len(x) for x in tdata])) > 1:
 			raise FrameworkException('Row lengths not consistent.')
+		
 		lens = []
 		cols = len(tdata[0])
+		
 		# create a list of max widths for each column
+		# lens = [maxLengthOfDataInEachColumn(l1),l2,l3........NoOfCols]
 		for i in range(0, cols):
+			# col size depends upon data size => max is according to key=len else max("asdfg","qwe") is "qwe"
 			lens.append(len(max([self.to_unicode_str(x[i]) if x[i] != None else '' for x in tdata], key=len)))
+		#print(lens)
+		
 		# calculate dynamic widths based on the title
 		title_len = len(title)
+		#print(title_len)
 		tdata_len = sum(lens) + (3*(cols-1))
+		#print(tdata_len)
 		diff = title_len - tdata_len
+		#print(diff)
 		if diff > 0:
-			diff_per = diff / cols
+			diff_per = diff // cols
+			#diff_per = diff / cols
+			#print(diff_per)
 			lens = [x+diff_per for x in lens]
 			diff_mod = diff % cols
 			for x in range(0, diff_mod):
 				lens[x] += 1
+		#print(lens)
+		
 		# build ascii table
 		if len(tdata) > 0:
 			separator_str = f"{self.spacer}+{sep}{f'%s{sep*3}'*(cols-1)}%s{sep}+"
