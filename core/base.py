@@ -19,24 +19,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __version__ = "v1.4.9"
 import argparse
 import errno
-import imp
+import imp  #provides an interface to the mechanisms used to implement the import statement.
 import os
 import random
 import re
-import shutil
+import shutil #offers a number of high-level operations on files and collections of files.
 import sys
-import builtins
-import shlex
+import builtins #provides direct access to all ‘built-in’ identifiers of Python;  useful in modules that provide objects with the same name as a built-in value
+import shlex #makes it easy to write lexical analyzers
 import textwrap
+
 from multiprocessing import Pool,Process
+# Pool object which offers a convenient means of parallelizing the execution of a function across multiple input values, distributing the input data across processes (data parallelism)
+#In multiprocessing, processes are spawned by creating a Process object and then calling its start() method
+
 
 # import framework libs
 from core import framework
 
 from threading import Lock
-_print_lock = Lock()
+_print_lock = Lock() #class implementing primitive lock objects. Once a thread has acquired a lock, subsequent attempts to acquire it block, until it is released; any thread may release it.
+
 
 # spooling system
+##Spooling is a process in which data is temporarily held to be used and executed by a device, program or the system
 def spool_print(*args, **kwargs):
 	with _print_lock:
 		if framework.Framework._spool:
@@ -54,6 +60,8 @@ builtins._print = print
 # override the builtin print function with the new print function
 builtins.print = spool_print
 
+
+
 class Base(framework.Framework):
 
 	def __init__(self):
@@ -70,26 +78,44 @@ class Base(framework.Framework):
 		self._name = self._config['name']
 		self._prompt_template = '%s[%s] > '
 		self._base_prompt = self._prompt_template % ('', self._name)
+		
 		# establish dynamic paths for framework elements
 		self.path = framework.Framework.app_path = sys.path[0]
+		
+		##app_path  => from framework class => ro get use self else to set use complete class name
+		
+		#data_path => data dir 
+		#core_path => core dir
+		#module_path => module dir
+		#module_ext => module extention
+		#module_dirname => modules
+		#workspaces_dirname => .maryam/workspaces
+		
 		self.data_path = framework.Framework.data_path = os.path.join(
 			self.app_path, self._config['data_directory_name'])
+		
 		self.core_path = framework.Framework.core_path = os.path.join(
 			self.app_path, 'core')
+		
 		self.module_path = framework.Framework.module_path = os.path.join(
 			self.app_path, self._config['module_directory_name'])
+		
 		self.module_ext = framework.Framework.module_ext = self._config[
 			'module_ext']
+		
 		self.module_dirname = framework.Framework.module_dirname = self._config[
 			'module_directory_name']
+			
+		
 		self.workspaces_dirname = self._config['workspaces_directory_name']
 		self.options = self._global_options
+	
 		self._init_global_options()
-		self._init_home()
+		self._init_home() # initialize home folder
 		self.init_workspace('default')
 		self._init_var()
-		self._check_version()
-		if self._mode == Mode.CONSOLE:
+		self._check_version() #make web request to check latest maryam version
+		if self._mode == Mode.CONSOLE:  #Mode is support class defined at last
 			self.show_banner()
 
 	# ==================================================
@@ -97,6 +123,7 @@ class Base(framework.Framework):
 	# ==================================================
 
 	def _init_global_options(self):
+		#register_option from framework class
 		self.register_option('target', 'example.com', True,
 							 'target for default hostname')
 		self.register_option('proxy', None, False,
@@ -135,15 +162,22 @@ class Base(framework.Framework):
 				self.output(f"Remote version:  {remote}")
 				self.output(f"Local version:   {local}")
 
+	
+	
 	def _load_modules(self):
 		self.loaded_category = {}
 		self._loaded_modules = framework.Framework._loaded_modules
 		# crawl the module directory and build the module tree
 		for dirpath, dirnames, filenames in os.walk(self.module_path, followlinks=True):
+			
+			#in each itr give [pwd] [dir in pwd] [filenames in pwd] 
+			
 			# remove hidden files and directories
 			filenames = [f for f in filenames if not f[0] == '.']
 			dirnames[:] = [d for d in dirnames if not d[0] == '.']
 			if len(filenames) > 0:
+				
+				# for each .py file 
 				for filename in [f for f in filenames if f.endswith(
 						self.module_ext)]:
 					is_loaded = self._load_module(dirpath, filename)
@@ -152,6 +186,7 @@ class Base(framework.Framework):
 						modules_reg = r'/' + \
 							self.module_dirname + r"/([^/]*)"
 						try:
+							# trying to find module category [osint search footprint] using regex on filepath
 							mod_category = re.search(
 								modules_reg, dirpath).group(1)
 						except AttributeError:
@@ -172,12 +207,26 @@ class Base(framework.Framework):
 								[-1].split('/') + [mod_name])
 		mod_loadname = mod_dispname.replace("/", "_")
 		mod_loadpath = os.path.join(dirpath, filename)
+		
+		#mod_name :  facebook
+		#mod_dispname :  search/facebook
+		#mod_loadname :  search_facebook  (replace / by _ in mod_dispname)
+		#mod_loadpath :  /media/tarunesh1234/New_Volume_E1/Maryam/modules/search/facebook.py
+
 		mod_file = open(mod_loadpath)
+		
 		try:
 			# import the module into memory
+			## dynamic explicit import  using python imp module
+			##Load and initialize a module implemented as a Python source file and return its module object.
+			##If the module was already initialized, it will be initialized again.
 			imp.load_source(mod_loadname, mod_loadpath, mod_file)
-			__import__(mod_loadname)
+			__import__(mod_loadname) #__import__() is a function that is called by the import statement.
+			
 			# add the module to the framework's loaded modules
+			#print("check :" ,sys.modules[mod_loadname].Module(mod_dispname))
+			
+			#_loaded_modules stores module objects
 			self._loaded_modules[mod_dispname] = sys.modules[mod_loadname].Module(
 				mod_dispname)
 			self._module_names[mod_name] = mod_dispname
@@ -187,7 +236,7 @@ class Base(framework.Framework):
 			self.error(f"Module \'{mod_dispname}\' disabled. Dependency required: {self.to_unicode_str(e)[16:]}")
 		except:
 			# notify the user of errors
-			self.print_exception()
+			self.print_exception()  # from framework
 			self.error(f"Module '{mod_dispname}' disabled.")
 		# remove the module from the framework's loaded modules
 		self._loaded_modules.pop(mod_dispname, None)
@@ -201,6 +250,8 @@ class Base(framework.Framework):
 	def init_workspace(self, workspace):
 		if not workspace:
 			return
+		
+		#workspace =  home_dir + .maryam/workspaces/ + given_workspace_name
 		workspace = os.path.join(self._home, self.workspaces_dirname, workspace)
 		if not os.path.exists(workspace):
 			os.makedirs(workspace)
@@ -255,6 +306,7 @@ class Base(framework.Framework):
 				print(f'{framework.Colors.B}{cnt.ljust(count_len + 2)} {mod_name} modules{framework.Colors.N}')
 		print('')
 
+	
 	def show_workspaces(self):
 		self.do_workspaces("list")
 
@@ -313,9 +365,11 @@ class Base(framework.Framework):
 		if not params:
 			self.help_load()
 			return
+		
 		# finds any modules that contain params
 		modules = [params] if params in self._loaded_modules else [
 			x for x in self._loaded_modules if params in x]
+		
 		# notify the user if none or multiple modules are found
 		if len(modules) != 1:
 			if not modules:
@@ -324,8 +378,10 @@ class Base(framework.Framework):
 				self.output(f"Multiple modules match '{params}'.")
 				self.show_modules(modules)
 			return
+		
 		# load the module
 		mod_dispname = modules[0]
+		
 		# loop to support reload logic
 		while True:
 			y = self._loaded_modules[mod_dispname]
@@ -361,11 +417,12 @@ class Base(framework.Framework):
 	# TOOL/FUNCTION METHODS
 	# ==================================================
 	def opt_proc(self, tool_name, args=None, output=None):
+		#module_name store module_dispname
 		mod = self._loaded_modules[self._module_names[tool_name]]
 
 		meta = mod.meta
 		opts = meta['options']
-		description = f'{tool_name} {meta["version"]}({meta["author"]}) - \tdescription: {meta["description"]}\n'
+		description = f'{tool_name}{meta["version"]}({meta["author"]}) - \tdescription: {meta["description"]}\n'
 		parser = argparse.ArgumentParser(prog=tool_name, description=description)
 		for option in opts:
 			try:
@@ -455,4 +512,5 @@ class Mode(object):
 	GUI = 2
 
 	def __init__(self):
+		# NotImplementedError to indicate that the real implementation still needs to be added.
 		raise NotImplementedError("This class should never be instantiated.")
