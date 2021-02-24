@@ -842,6 +842,7 @@ class Framework(cmd.Cmd):
 		params = params.split()
 		arg = params.pop(0).lower()
 		cmds = self._get_history()
+		print(cmds)
 		if arg == 'list':
 			cmds = cmds[:50]
 			header = '\nCommands:\n'
