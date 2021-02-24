@@ -60,6 +60,7 @@ from core.util import yippy
 class BaseModule(framework.Framework):
 
 	def __init__(self, params, query=None):
+		print("Basemodule : ",params)
 		framework.Framework.__init__(self, params)
 		self.options = framework.Options()
 		# register all other specified options

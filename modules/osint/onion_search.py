@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from core.module import BaseModule
 
 class Module(BaseModule):
-
+	
 	meta = {
 		'name': 'Onions Network Search',
 		'author': 'Saeeddqn',

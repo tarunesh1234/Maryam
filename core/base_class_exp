@@ -1,0 +1,85 @@
+CLASS:
+	Base(framework.Framework)
+	
+MEMBER_VARIABLES:
+	
+CONSTRUCTOR:
+	def __init__(self):
+		framework.Framework.__init__(self, 'base')
+		self._history_file = ''
+		self._mode = 0
+		self._config = {
+				name : maryam
+				module_ext : .py
+				data_directory_name : data
+				module_directory_name : modules
+				workspaces_directory_name : .maryam/workspaces
+			}
+		self._name = self._config['name']
+		self._prompt_template = '%s[%s] > '
+		self._base_prompt = self._prompt_template % ('', self._name)
+		self.path = Framework.app_path = sys.path[0]
+		self.data_path = Framework.data_path = self.app_path + self._config['data_directory_name']
+		self.core_path = Framework.core_path = self.app_path + 'core'
+		self.module_path = Framework.module_path = self.app_path +self._config['module_directory_name']
+		self.module_ext = Framework.module_ext = self._config['module_ext']
+		self.module_dirname = Framework.module_dirname = self._config['module_directory_name']
+		self.workspaces_dirname = self._config['workspaces_directory_name']
+		self.options = self._global_options
+	
+		self._init_global_options()
+		self._init_home() 
+		self.init_workspace('default') => create wkspc dir , change prompt , initHistory , load[config,modules]
+		self._init_var()
+		self._check_version() => make web request to check latest maryam version
+		self.show_banner() if self._mode == Mode.CONSOLE
+
+MEMBER_FUNCTIONS:
+	# ==================================================
+	# SUPPORT METHODS
+	# ==================================================
+		_init_global_options => Framework.register_option()
+		_init_home
+		_check_version
+		_load_modules
+		_load_module
+	
+	# ==================================================
+	# WORKSPACE METHODS
+	# ==================================================
+		init_workspace
+		remove_workspace
+		_get_workspaces
+
+	# ==================================================
+	# SHOW METHODS
+	# ==================================================
+		show_banner
+		show_workspaces
+	
+	#==================================================
+	# HELP METHODS
+	#==================================================
+	help_workspaces
+	
+	# ==================================================
+	# COMMAND METHODS
+	# ==================================================
+		do_reload
+		do_workspaces
+		do_load = do_use
+	
+	# ==================================================
+	# TOOL/FUNCTION METHODS
+	# ==================================================
+		opt_proc
+		run_tool
+
+
+
+
+
+
+
+
+

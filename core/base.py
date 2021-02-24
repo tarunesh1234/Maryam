@@ -115,10 +115,9 @@ class Base(framework.Framework):
 		
 		self.workspaces_dirname = self._config['workspaces_directory_name']
 		self.options = self._global_options
-	
 		self._init_global_options()
 		self._init_home() # initialize home folder
-		self.init_workspace('default')
+		self.init_workspace('default') #create wkspc dir , change prompt , initHistory , load[config,modules]
 		self._init_var()
 		self._check_version() #make web request to check latest maryam version
 		if self._mode == Mode.CONSOLE:  #Mode is support class defined at last
@@ -127,7 +126,8 @@ class Base(framework.Framework):
 	# ==================================================
 	# SUPPORT METHODS
 	# ==================================================
-
+	
+	#init global options => target ,proxy,limit,agent,rand_agent,timeout,verbosity,history
 	def _init_global_options(self):
 		#register_option from framework class
 		self.register_option('target', 'example.com', True,
@@ -147,7 +147,7 @@ class Base(framework.Framework):
 
 	def _init_home(self):
 		self._home = framework.Framework._home = os.path.expanduser('~')
-		# initialize home folder
+		print("initializing home folder")
 		if not os.path.exists(self._home):
 			os.makedirs(self._home)
 
@@ -171,21 +171,21 @@ class Base(framework.Framework):
 	
 	
 	def _load_modules(self):
+		print("=======loading_modules=======")
 		self.loaded_category = {}
 		self._loaded_modules = framework.Framework._loaded_modules
+		
 		# crawl the module directory and build the module tree
 		for dirpath, dirnames, filenames in os.walk(self.module_path, followlinks=True):
 			
-			#in each itr give [pwd] [dir in pwd] [filenames in pwd] 
-			
+			#in each itr give [pwd] [dir in pwd] [filenames in pwd] 	
 			# remove hidden files and directories
 			filenames = [f for f in filenames if not f[0] == '.']
 			dirnames[:] = [d for d in dirnames if not d[0] == '.']
 			if len(filenames) > 0:
 				
 				# for each .py file 
-				for filename in [f for f in filenames if f.endswith(
-						self.module_ext)]:
+				for filename in [f for f in filenames if f.endswith(self.module_ext)]:
 					is_loaded = self._load_module(dirpath, filename)
 					mod_category = "disabled"
 					if is_loaded:
@@ -206,8 +206,9 @@ class Base(framework.Framework):
 						if mod_category not in self.loaded_category:
 							self.loaded_category[mod_category] = 0
 						self.loaded_category[mod_category] += 1
-
+		print("==========modules loaded =========")
 	def _load_module(self, dirpath, filename):
+		print(f"loading {filename}")
 		mod_name = filename.split('.')[0]
 		mod_dispname = '/'.join(re.split("/%s/" % self.module_dirname, dirpath)
 								[-1].split('/') + [mod_name])
@@ -232,10 +233,13 @@ class Base(framework.Framework):
 			# add the module to the framework's loaded modules
 			#print("check :" ,sys.modules[mod_loadname].Module(mod_dispname))
 			
-			#_loaded_modules stores module objects
-			self._loaded_modules[mod_dispname] = sys.modules[mod_loadname].Module(
-				mod_dispname)
+			#_loaded_modules stores tool's module object
+			# sys.modules => dictionary that maps module names to modules which have already been loaded
+			# type(sys.modules[mod_loadname]) =>module
+			# Module() is defined in each tool's module file 
+			self._loaded_modules[mod_dispname] = sys.modules[mod_loadname].Module(mod_dispname)
 			self._module_names[mod_name] = mod_dispname
+		
 			return True
 		except ImportError as e:
 			# notify the user of missing dependencies
@@ -252,18 +256,22 @@ class Base(framework.Framework):
 	# ==================================================
 	# WORKSPACE METHODS
 	# ==================================================
-
+	
+	#create wkspc dir , change prompt , initHistory , load[config,modules]
 	def init_workspace(self, workspace):
 		if not workspace:
 			return
 		
+		print(f"init_workspace {workspace}")
 		#workspace =  home_dir + .maryam/workspaces/ + given_workspace_name
 		workspace = os.path.join(self._home, self.workspaces_dirname, workspace)
 		if not os.path.exists(workspace):
 			os.makedirs(workspace)
+			print("init_workspace_dir")
 
 		# set workspace attributes
 		self.workspace = framework.Framework.workspace = workspace
+		print("changing prompt")
 		self.prompt = self._prompt_template % (self._base_prompt[:-3], self.workspace.split('/')[-1])
 		# load workspace configuration
 		self._init_history()

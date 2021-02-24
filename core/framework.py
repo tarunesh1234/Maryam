@@ -44,7 +44,7 @@ import codecs #Encoders and decoders for converting text between different repre
 import json
 import os
 import re
-import subprocess
+import subprocess	#spawn new processes, connect to their input/output/error pipes, and get return codes.
 import sys
 import signal  #Receive notification of asynchronous system events
 import traceback #Extract, format, and print exceptions and stack traces
@@ -148,8 +148,8 @@ class Framework(cmd.Cmd):
 	_load = 0
 	# framework variables
 	_global_options = Options() # modified dict object
-	_loaded_modules = {}
-	_module_names = {}
+	_loaded_modules = {} # dict[mod_dispname] = instant module object
+	_module_names = {} 	 # dict[mod_name] = mod_dispname => loaded module names only
 	app_path = ''
 	data_path = ''
 	core_path = ''
@@ -166,6 +166,7 @@ class Framework(cmd.Cmd):
 	_history_file = ''
 	def __init__(self, params):
 		cmd.Cmd.__init__(self)
+		print("check : ",params)
 		self._modulename = params
 		self.ruler = '-'
 		self.spacer = '  '
@@ -173,6 +174,7 @@ class Framework(cmd.Cmd):
 		self.do_help.__func__.__doc__ = '''Displays this menu'''
 		self.doc_header = 'Commands (type [help|?] <topic>):'
 		self._exit = 0
+		
 
 	# ==================================================
 	# CMD OVERRIDE METHODS
@@ -587,6 +589,7 @@ class Framework(cmd.Cmd):
 	def _init_history(self, reborn=False, write=True):
 		history = os.path.join(self.workspace, 'history.dat')
 		# initialize history file
+		print("init_history")
 		if not os.path.exists(history):
 			self._is_readable(history,'w').close()
 		if reborn:
@@ -609,6 +612,7 @@ class Framework(cmd.Cmd):
 
 	def _log_commands(self, cmd):
 		self._init_history()
+		print("logging")
 		if cmd and cmd != 'EOF':
 			self._history_file.write(f"\n{cmd}")
 			self._history_file.close()
@@ -616,8 +620,9 @@ class Framework(cmd.Cmd):
 	# ==================================================
 	# OPTIONS METHODS
 	# ==================================================
-
+	# called in base.py self.register_option('target', 'example.com', True,'target for DNS interrogation')
 	def register_option(self, name, value, required, description):
+		print("registering option : ",name)
 		self.options.init_option(
 			name=name.lower(),
 			value=value,
@@ -643,6 +648,7 @@ class Framework(cmd.Cmd):
 			config_file = self._is_readable(config_path)
 			try:
 				config_data = self.config_data = json.loads(config_file.read())
+				print("loading config")
 			except ValueError:
 				# file is corrupt, nothing to load, exit gracefully
 				pass
@@ -747,20 +753,29 @@ class Framework(cmd.Cmd):
 		self.do_history('list')
 
 	def show_modules(self, param):
+		# param => module category
 		# process parameter according to type
+	
+		#print("in show modules")
+		#print(param)
+		
 		if isinstance(param, list):
 			modules = param
+		
 		elif param:
+			# show modules {category}
 			modules = [
 				x for x in Framework._loaded_modules if x.startswith(param)]
 			if not modules:
 				self.error('Invalid module category.')
 				return
 		else:
+			# show modules {}
 			modules = Framework._loaded_modules
 		if not modules:
 			self.error('no modules to display.')
 			return
+		
 		# display the modules
 		last_category = ''
 		for module in sorted(modules):
@@ -796,14 +811,22 @@ class Framework(cmd.Cmd):
 			print(f'{os.linesep}{self.spacer}No options available for this module.{os.linesep}')
 
 	def show_var(self):
+		print("in show_var")
 		self.do_var('list')
 
+
+	#return list[all_show_methods]
 	def _get_show_names(self):
+		#print("in _get_show_names")
 		# Any method beginning with "show_" will be parsed
 		# and added as a subcommand for the show command.
 		prefix = 'show_'
-		return [x[len(prefix):]
-				for x in self.get_names() if x.startswith(prefix)]
+		
+		# get_name  method is used to pull in base class attributes
+		# temp = [x[len(prefix):]for x in self.get_names() if x.startswith(prefix)]
+		# print("all_show_methods : ",temp)
+		# => all_show_methods :  ['banner', 'history', 'modules', 'options', 'var', 'workspaces']
+		return [x[len(prefix):]for x in self.get_names() if x.startswith(prefix)]
 
 	# ==================================================
 	# COMMAND METHODS
@@ -883,19 +906,26 @@ class Framework(cmd.Cmd):
 	def do_unset(self, params):
 		'''Unsets module options'''
 		self.do_set(f'{params} {None}')
-
+	
+	
+	# run show methods
+	# show var ab cd
 	def do_show(self, params):
 		'''Shows various framework items'''
 		if not params:
 			self.help_show()
 			return
 		_params = params
-		params = params.lower().split()
-		arg = params[0]
-		params = ' '.join(params[1:])
+		params = params.lower().split()		#['var', 'ab', 'cd']
+		arg = params[0] 	# var
+		params = ' '.join(params[1:]) # ab cd
+		
+		# search for show_var method using _get_show_names()
 		if arg in self._get_show_names():
 			func = getattr(self, "show_" + arg)
+			print()
 			if arg == "modules":
+				# param must be module category for show_modules
 				func(params)
 			else:
 				func()
@@ -917,9 +947,13 @@ class Framework(cmd.Cmd):
 
 	def do_shell(self, params):
 		'''Executes shell commands'''
+		print("in do_shell")
 		if not params:
 			self.help_shell()
 			return
+		
+		# The constructor for Popen takes arguments to set up the new process 
+		# so the parent can communicate with it via pipes.
 		proc = subprocess.Popen(params, shell=True, stdout=subprocess.PIPE,
 								stderr=subprocess.PIPE, stdin=subprocess.PIPE)
 		self.output(f'Command: {params}{os.linesep}')
@@ -1147,6 +1181,7 @@ class Framework(cmd.Cmd):
 		self.table(tdata, header=['Name', 'Value'])
 
 	def _init_var(self, vals=None):
+		print("init_vars")
 		vars_path = os.path.join(self.workspace, 'var.dat')
 		# create a var file if one doesn't exist
 		if os.path.exists(vars_path):
