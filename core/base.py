@@ -147,7 +147,7 @@ class Base(framework.Framework):
 
 	def _init_home(self):
 		self._home = framework.Framework._home = os.path.expanduser('~')
-		print("initializing home folder")
+		#print("initializing home folder")
 		if not os.path.exists(self._home):
 			os.makedirs(self._home)
 
@@ -171,7 +171,7 @@ class Base(framework.Framework):
 	
 	
 	def _load_modules(self):
-		print("=======loading_modules=======")
+		#print("=======loading_modules=======")
 		self.loaded_category = {}
 		self._loaded_modules = framework.Framework._loaded_modules
 		
@@ -206,9 +206,9 @@ class Base(framework.Framework):
 						if mod_category not in self.loaded_category:
 							self.loaded_category[mod_category] = 0
 						self.loaded_category[mod_category] += 1
-		print("==========modules loaded =========")
+		#print("==========modules loaded =========")
 	def _load_module(self, dirpath, filename):
-		print(f"loading {filename}")
+		#print(f"loading {filename}")
 		mod_name = filename.split('.')[0]
 		mod_dispname = '/'.join(re.split("/%s/" % self.module_dirname, dirpath)
 								[-1].split('/') + [mod_name])
@@ -262,16 +262,16 @@ class Base(framework.Framework):
 		if not workspace:
 			return
 		
-		print(f"init_workspace {workspace}")
+		#print(f"init_workspace {workspace}")
 		#workspace =  home_dir + .maryam/workspaces/ + given_workspace_name
 		workspace = os.path.join(self._home, self.workspaces_dirname, workspace)
 		if not os.path.exists(workspace):
 			os.makedirs(workspace)
-			print("init_workspace_dir")
+			#print("init_workspace_dir")
 
 		# set workspace attributes
 		self.workspace = framework.Framework.workspace = workspace
-		print("changing prompt")
+		#print("changing prompt")
 		self.prompt = self._prompt_template % (self._base_prompt[:-3], self.workspace.split('/')[-1])
 		# load workspace configuration
 		self._init_history()

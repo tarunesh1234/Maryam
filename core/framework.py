@@ -166,7 +166,7 @@ class Framework(cmd.Cmd):
 	_history_file = ''
 	def __init__(self, params):
 		cmd.Cmd.__init__(self)
-		print("check : ",params)
+		#print("check : ",params)
 		self._modulename = params
 		self.ruler = '-'
 		self.spacer = '  '
@@ -591,7 +591,7 @@ class Framework(cmd.Cmd):
 	def _init_history(self, reborn=False, write=True):
 		history = os.path.join(self.workspace, 'history.dat')
 		# initialize history file
-		print("init_history")
+		#print("init_history")
 		if not os.path.exists(history):
 			self._is_readable(history,'w').close()
 		if reborn:
@@ -614,7 +614,7 @@ class Framework(cmd.Cmd):
 
 	def _log_commands(self, cmd):
 		self._init_history()
-		print("logging")
+		#print("logging")
 		if cmd and cmd != 'EOF':
 			self._history_file.write(f"\n{cmd}")
 			self._history_file.close()
@@ -624,7 +624,7 @@ class Framework(cmd.Cmd):
 	# ==================================================
 	# called in base.py self.register_option('target', 'example.com', True,'target for DNS interrogation')
 	def register_option(self, name, value, required, description):
-		print("registering option : ",name)
+		#print("registering option : ",name)
 		self.options.init_option(
 			name=name.lower(),
 			value=value,
@@ -650,7 +650,7 @@ class Framework(cmd.Cmd):
 			config_file = self._is_readable(config_path)
 			try:
 				config_data = self.config_data = json.loads(config_file.read())
-				print("loading config")
+				#print("loading config")
 			except ValueError:
 				# file is corrupt, nothing to load, exit gracefully
 				pass
@@ -813,7 +813,7 @@ class Framework(cmd.Cmd):
 			print(f'{os.linesep}{self.spacer}No options available for this module.{os.linesep}')
 
 	def show_var(self):
-		print("in show_var")
+		#print("in show_var")
 		self.do_var('list')
 
 
@@ -842,7 +842,7 @@ class Framework(cmd.Cmd):
 		params = params.split()
 		arg = params.pop(0).lower()
 		cmds = self._get_history()
-		print(cmds)
+		#print(cmds)
 		if arg == 'list':
 			cmds = cmds[:50]
 			header = '\nCommands:\n'
@@ -950,7 +950,7 @@ class Framework(cmd.Cmd):
 
 	def do_shell(self, params):
 		'''Executes shell commands'''
-		print("in do_shell")
+		#print("in do_shell")
 		if not params:
 			self.help_shell()
 			return
@@ -1184,7 +1184,7 @@ class Framework(cmd.Cmd):
 		self.table(tdata, header=['Name', 'Value'])
 
 	def _init_var(self, vals=None):
-		print("init_vars")
+		#print("init_vars")
 		vars_path = os.path.join(self.workspace, 'var.dat')
 		# create a var file if one doesn't exist
 		if os.path.exists(vars_path):
