@@ -238,6 +238,7 @@ class Framework(cmd.Cmd):
 			return self.default(line)
 		else:
 			if cmd in self._module_names:
+				# run_tool defined in base.py
 				return self.run_tool('opt_proc', cmd, arg)
 			else:
 				try:
@@ -277,7 +278,8 @@ class Framework(cmd.Cmd):
 		else:
 			obj = str(obj)
 		return obj
-
+	
+	#return a corresponding file object.if exist else False
 	def _is_readable(self, filename, flag='r'):
 		try:
 			return open(filename, flag)
